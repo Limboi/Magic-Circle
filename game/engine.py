@@ -1,17 +1,19 @@
 import tcod as libtcod
 
-from entities import Humanoid
 from input_handlers import handle_keys
+from entities import Humanoid, get_blocking_entities_at_location
 from map.game_map import GameMap
 from rendering import clear_all, render_all
 from fov_calculation import initialize_fov, recompute_fov
+from game_states import GameStates
+from death_functions import kill_monster, kill_player
 
 
 def main():
 	screen_width = 80
 	screen_height = 80
-	map_width = 80
-	map_height = 80
+	map_width = 50
+	map_height = 50
 
 	fov_algorithm = 0
 	fov_light_walls = True
@@ -32,8 +34,7 @@ def main():
 		'light_fort_wall': libtcod.Color(200, 20, 20)
 	}
 
-	player = Humanoid(int(screen_width / 2), int(screen_height / 2), '@', libtcod.white)
-	entities = [player]
+	entities = []
 
 	libtcod.console_set_custom_font('arial10x10.png', libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
 	libtcod.console_init_root(screen_width, screen_height, 'Project Magic Circle', False)
@@ -42,38 +43,98 @@ def main():
 	map = GameMap(map_width, map_height)
 	map.create_map(547)
 	fov_map = initialize_fov(map)
+	map.place_entities_test(entities, 5)
+
+	player = entities[0]
 
 	key = libtcod.Key()
 	mouse = libtcod.Mouse()
 
-	while not libtcod.console_is_window_closed():
-		libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS, key, mouse)
+	game_state = 0
+	action_buffer = None
 
+	while not libtcod.console_is_window_closed():
 		if fov_recompute:
-			recompute_fov(fov_map, player.x, player.y, fov_radius, fov_light_walls, fov_algorithm)
+			recompute_fov(fov_map, entities[0].x, entities[0].y, fov_radius, fov_light_walls, fov_algorithm)		
 
 		render_all(con, entities, map, fov_map, fov_recompute, screen_width, screen_height, colors)
+		fov_recompute = False
 		libtcod.console_flush()
 		clear_all(con, entities)
 
-		action = handle_keys(key)
+		for entity in entities:
+			entity.give_energy( entity.speed )
 
-		move = action.get('move')
-		exit = action.get('exit')
-		fullscreen = action.get('fullscreen')
+		for entity in entities:
+			if entity == player:
 
-		if move:
-			dx, dy = move
+				if action_buffer == None:
+					libtcod.sys_wait_for_event(libtcod.EVENT_KEY_PRESS, key, mouse, False)
+					action = handle_keys(key)
+					action_buffer = action
 
-			if not map.is_blocked(player.x + dx, player.y + dy):
-				player.move(dx, dy)
-				fov_recompute = True
+				turn_results = entity.ai.take_action(action_buffer, map, entities, game_state)
 
-		if exit:
-			return True
+				if turn_results:
+					for turn_result in turn_results:
+							message = turn_result.get('message')
+							dead_entity = turn_result.get('dead')
+							fov_recompute = turn_result.get('fov_recompute')
+							energy = turn_result.get('not_enough_energy')
+							exit = turn_result.get('exit')
+							fullscreen = turn_result.get('fullscreen')
 
-		if fullscreen:
-			libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
+
+							if message:
+								print(message)
+
+							if dead_entity:
+								if dead_entity == player:
+									message, game_state = kill_player(dead_entity)
+								else:
+									message = kill_monster(dead_entity)
+								print(message)
+
+							if energy == None:
+								action_buffer = None
+
+							if fov_recompute == None:
+								fov_recompute = False
+
+							if exit:
+								return True
+
+							if fullscreen:
+								libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
+
+
+			else:
+				if entity.ai:
+					turn_results = entity.ai.take_action(player, fov_map, map, entities)
+
+					if turn_results:
+						for turn_result in turn_results:
+								message = turn_result.get('message')
+								dead_entity = turn_result.get('dead')
+								exit = turn_result.get('exit')
+								fullscreen = turn_result.get('fullscreen')
+
+								if message:
+									print(message)
+
+								if dead_entity:
+									if dead_entity == player:
+										message, game_state = kill_player(dead_entity)
+									else:
+										message = kill_monster(dead_entity)
+
+									print(message)
+
+								if game_state == GameStates.PLAYER_DEAD:
+									break
+
+
+
 
 
 if __name__ == '__main__':
