@@ -43,7 +43,7 @@ def main():
 	map = GameMap(map_width, map_height)
 	map.create_map(547)
 	fov_map = initialize_fov(map)
-	map.place_entities_test(entities, 5)
+	map.place_entities_test(entities, 1)
 
 	player = entities[0]
 
@@ -51,6 +51,7 @@ def main():
 	mouse = libtcod.Mouse()
 
 	game_state = 0
+	realtime = False
 	action_buffer = None
 
 	while not libtcod.console_is_window_closed():
@@ -63,13 +64,16 @@ def main():
 		clear_all(con, entities)
 
 		for entity in entities:
-			entity.give_energy( entity.speed )
+			entity.give_energy( int(entity.speed/5) )
 
 		for entity in entities:
 			if entity == player:
 
 				if action_buffer == None:
-					libtcod.sys_wait_for_event(libtcod.EVENT_KEY_PRESS, key, mouse, False)
+					if realtime:
+						libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS, key, mouse)
+					else:
+						libtcod.sys_wait_for_event(libtcod.EVENT_KEY_PRESS, key, mouse, True)
 					action = handle_keys(key)
 					action_buffer = action
 
@@ -106,7 +110,8 @@ def main():
 
 							if fullscreen:
 								libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
-
+				else:
+					action_buffer = None
 
 			else:
 				if entity.ai:
