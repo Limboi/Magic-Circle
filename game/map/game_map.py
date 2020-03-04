@@ -32,7 +32,7 @@ class GameMap:
 		random.seed()
 
 		player = Humanoid(int(self.width / 2), int(self.height / 2), '@', libtcod.white, 'Player', 
-			blocks = True, combat_aspect = Fighter(3000,5,10), ai = Player())
+			blocks = True, combat_aspect = Fighter(3000,5,10), ai = Player(), speed = 20)
 		entities.append(player)
 
 		for i in range(number):

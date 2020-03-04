@@ -21,8 +21,8 @@ def main():
 	fov_recompute = True
 
 	colors = {
-		'dark_rock_wall': libtcod.Color(0, 0, 100),
-		'dark_rock_floor': libtcod.Color(50, 50, 150),
+		'dark_rock_wall': libtcod.Color(0, 0, 50),
+		'dark_rock_floor': libtcod.Color(30, 30, 80),
 		'dark_chasm': libtcod.Color(30,30,30),
 		'dark_smooth_floor': libtcod.Color(100, 50, 150),
 		'dark_fort_wall': libtcod.Color(40, 0, 0),
@@ -43,7 +43,9 @@ def main():
 	map = GameMap(map_width, map_height)
 	map.create_map(547)
 	fov_map = initialize_fov(map)
-	map.place_entities_test(entities, 1)
+	nav_map = initialize_fov(map)
+	nav_map_recompute = False
+	map.place_entities_test(entities, 10)
 
 	player = entities[0]
 
@@ -55,10 +57,16 @@ def main():
 	action_buffer = None
 
 	while not libtcod.console_is_window_closed():
-		if fov_recompute:
-			recompute_fov(fov_map, entities[0].x, entities[0].y, fov_radius, fov_light_walls, fov_algorithm)		
+		if nav_map_recompute:
+			fov_map = initialize_fov(map)
+			nav_map = initialize_fov(map)
+			fov_recompute = True
+			nav_map_recompute = False
 
-		render_all(con, entities, map, fov_map, fov_recompute, screen_width, screen_height, colors)
+		if fov_recompute:
+			recompute_fov(fov_map, player.x, player.y, fov_radius, fov_light_walls, fov_algorithm)		
+
+		render_all(con, entities, map, fov_map, fov_radius, fov_recompute, screen_width, screen_height, colors)
 		fov_recompute = False
 		libtcod.console_flush()
 		clear_all(con, entities)
@@ -115,7 +123,7 @@ def main():
 
 			else:
 				if entity.ai:
-					turn_results = entity.ai.take_action(player, fov_map, map, entities)
+					turn_results = entity.ai.take_action(nav_map, entities)
 
 					if turn_results:
 						for turn_result in turn_results:

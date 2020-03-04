@@ -1,5 +1,6 @@
 import tcod as libtcod
 from enum import Enum
+import math
 
 class RenderOrder(Enum):
 	CORPSE = 1
@@ -7,7 +8,10 @@ class RenderOrder(Enum):
 	ACTOR = 3
 
 
-def render_all(con, entities, game_map, fov_map, fov_recompute, screen_width, screen_height, colors):
+def render_all(con, entities, game_map, fov_map, fov_radius, fov_recompute, screen_width, screen_height, colors):
+	for entity in entities:
+		if entity.ai.__class__.__name__== 'Player':
+			player = entity
 	if fov_recompute:
 		for y in range(game_map.height):
 			for x in range(game_map.width):
@@ -15,7 +19,8 @@ def render_all(con, entities, game_map, fov_map, fov_recompute, screen_width, sc
 
 				if visible:
 					color = 'light_' + game_map.tiles[y][x].name
-					libtcod.console_set_char_background(con, x, y, colors.get(color), libtcod.BKGND_SET)
+					hue = math.sqrt((player.x - x)**2 + (player.y - y)**2) / (fov_radius * 1.5)
+					libtcod.console_set_char_background(con, x, y, colors.get(color) * (1-hue), libtcod.BKGND_SET)
 					game_map.tiles[y][x].explored = True
 
 				elif game_map.tiles[y][x].explored == True:
