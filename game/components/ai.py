@@ -23,7 +23,7 @@ class Player:
 					target = get_blocking_entities_at_location(entities, dest_x, dest_y)
 
 					if target:
-						attack_results = player.combat_aspect.attack(target)
+						attack_results = player.combat_aspect.attack(target, 0, 'cut')
 						results.extend(attack_results)
 					else:
 						if player.move(dx, dy):
@@ -38,6 +38,8 @@ class Player:
 
 		if fullscreen:
 			results.append({'fullscreen': True})
+
+		results.extend(player.combat_aspect.update_combatant_state())
 
 		return results
 
@@ -58,7 +60,7 @@ class BasicMonster:
 		monster = self.owner
 
 		libtcod.map_compute_fov(nav_map, monster.x, monster.y, 10, True, 0)
-		self.fov_recompute = False
+		#self.fov_recompute = False
 
 		for entity in entities:
 			if entity.ai.__class__.__name__== 'Player' and libtcod.map_is_in_fov(nav_map, entity.x, entity.y):
@@ -68,10 +70,9 @@ class BasicMonster:
 		if target:
 			if monster.distance_to(target) >= 2:
 				monster.move_astar(target.x, target.y, entities, nav_map)
-				#monster.move_towards(target.x,target.y,game_map,entities)
 
-			elif target.combat_aspect.hp > 0:
-				attack_results = monster.combat_aspect.attack(target)
+			elif target.combat_aspect.active:
+				attack_results = monster.combat_aspect.attack(target, 0, 'cut')
 				results.extend(attack_results)
 
 		elif self.seen_target:
@@ -80,5 +81,7 @@ class BasicMonster:
 				monster.move_astar(x, y, entities, nav_map)
 			else:
 				self.seen_target = None
+
+		results.extend(monster.combat_aspect.update_combatant_state())
 
 		return results

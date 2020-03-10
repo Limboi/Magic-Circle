@@ -10,8 +10,8 @@ from death_functions import kill_monster, kill_player
 
 
 def main():
-	screen_width = 80
-	screen_height = 80
+	screen_width = 50
+	screen_height = 50
 	map_width = 50
 	map_height = 50
 
@@ -35,6 +35,8 @@ def main():
 	}
 
 	entities = []
+	items = []
+	effects = []
 
 	libtcod.console_set_custom_font('arial10x10.png', libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
 	libtcod.console_init_root(screen_width, screen_height, 'Project Magic Circle', False)
@@ -45,7 +47,7 @@ def main():
 	fov_map = initialize_fov(map)
 	nav_map = initialize_fov(map)
 	nav_map_recompute = False
-	map.place_entities_test(entities, 10)
+	map.place_entities_test(entities, 5)
 
 	player = entities[0]
 
@@ -124,7 +126,6 @@ def main():
 			else:
 				if entity.ai:
 					turn_results = entity.ai.take_action(nav_map, entities)
-
 					if turn_results:
 						for turn_result in turn_results:
 								message = turn_result.get('message')

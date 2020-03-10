@@ -4,7 +4,7 @@ import tcod as libtcod
 from map.tiles import Tile
 from map.terrain_gen import generate_terrain, generate_test_arena
 from entities import Humanoid
-from components.combat import Fighter
+from components.combat import Combatant
 from components.ai import BasicMonster, Player
 
 
@@ -32,7 +32,7 @@ class GameMap:
 		random.seed()
 
 		player = Humanoid(int(self.width / 2), int(self.height / 2), '@', libtcod.white, 'Player', 
-			blocks = True, combat_aspect = Fighter(3000,5,10), ai = Player(), speed = 20)
+			blocks = True, combat_aspect = Combatant('humanoid', 20, 20, 15), ai = Player(), speed = 20)
 		entities.append(player)
 
 		for i in range(number):
@@ -41,7 +41,7 @@ class GameMap:
 
 			if not any([entity for entity in entities if entity.x == x and entity.y == y]):
 				monster = Humanoid(x, y, 'o', libtcod.desaturated_green, 'Orc', blocks = True, 
-					combat_aspect = Fighter(20,0,10), ai = BasicMonster())
+					combat_aspect = Combatant('humanoid', 10, 10, 5), ai = BasicMonster())
 
 			entities.append(monster)
 		
