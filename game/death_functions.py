@@ -14,7 +14,7 @@ def kill_monster(monster):
     death_message = '{0} is dead!'.format(monster.name.capitalize())
 
     monster.char = '%'
-    monster.color = libtcod.dark_red
+    monster.color = libtcod.desaturated_red
     monster.blocks = False
     monster.combat_aspect = None
     monster.ai = None

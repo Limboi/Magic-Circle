@@ -10,9 +10,9 @@ def main():
 	libtcod.console_init_root(screen_width, screen_height, 'Image', fullscreen = False)
 	con = libtcod.console_new(screen_width, screen_height)
 
-	n = 30
+	n = 20
 	backgr = 0.7
-	im = Image.open('D:\\(un)important\\python\\3year\\project\\other\\test5.png')
+	im = Image.open('D:\\(un)important\\python\\3year\\project\\other\\test4.png')
 
 	rgbim = im.convert('RGB')
 	rgbim.thumbnail((n,n), Image.ANTIALIAS)
@@ -55,7 +55,7 @@ def get_char(x,y, image):
 		vx = 1
 
 	if vx < 20 and vy < 20 and brightness < 200:
-		return '.'
+		return '#'
 	elif vx < 20 and vy < 20 and brightness >= 200:
 		return ' '	
 	elif 0.5 < abs(vy/vx) < 2:
@@ -64,7 +64,7 @@ def get_char(x,y, image):
 		else:
 			return '/'
 	elif abs(vy/vx) > 2:
-		return '_'
+		return '-'
 	elif abs(vy/vx) < 0.5:
 		return '|'
 	else:

@@ -113,3 +113,27 @@ def get_blocking_entities_at_location(entities, destination_x, destination_y):
 			return entity
 
 	return None
+
+
+
+class StationaryEffect(Entity):
+	def __init__(self, x, y, char, color, name, amount, lifetime = None, render_order = RenderOrder.EFFECT):
+
+		self.x, self.y = x, y
+		self.char = char
+		self.color = color
+		self.name = name
+		self.amount = amount
+		self.lifetime = lifetime
+		self.render_order = render_order
+
+def superimpose_effect(effect, all_effects):
+	if all_effects:
+		for old_effect in all_effects:
+			if (effect.x == old_effect.x) and (effect.y == old_effect.y) and (effect.name == old_effect.name):
+				old_effect.amount += effect.amount
+				return all_effects
+	all_effects.append(effect)
+	return all_effects
+
+

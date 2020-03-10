@@ -3,12 +3,13 @@ from enum import Enum
 import math
 
 class RenderOrder(Enum):
-	CORPSE = 1
-	ITEM = 2
-	ACTOR = 3
+	EFFECT = 1
+	CORPSE = 2
+	ITEM = 3
+	ACTOR = 4
 
 
-def render_all(con, entities, game_map, fov_map, fov_radius, fov_recompute, screen_width, screen_height, colors):
+def render_all(con, entities, effects, game_map, fov_map, fov_radius, fov_recompute, screen_width, screen_height, colors):
 	for entity in entities:
 		if entity.ai.__class__.__name__== 'Player':
 			player = entity
@@ -29,6 +30,9 @@ def render_all(con, entities, game_map, fov_map, fov_radius, fov_recompute, scre
 
 
 	entities_in_render_order = sorted(entities, key=lambda x: x.render_order.value)
+
+	for effect in effects:
+		draw_entity(con, effect, fov_map)
 	
 	for entity in entities_in_render_order:
 		draw_entity(con, entity, fov_map)

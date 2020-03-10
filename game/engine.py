@@ -1,7 +1,7 @@
 import tcod as libtcod
 
 from input_handlers import handle_keys
-from entities import Humanoid, get_blocking_entities_at_location
+from entities import Humanoid, get_blocking_entities_at_location, superimpose_effect
 from map.game_map import GameMap
 from rendering import clear_all, render_all
 from fov_calculation import initialize_fov, recompute_fov
@@ -68,7 +68,7 @@ def main():
 		if fov_recompute:
 			recompute_fov(fov_map, player.x, player.y, fov_radius, fov_light_walls, fov_algorithm)		
 
-		render_all(con, entities, map, fov_map, fov_radius, fov_recompute, screen_width, screen_height, colors)
+		render_all(con, entities, effects, map, fov_map, fov_radius, fov_recompute, screen_width, screen_height, colors)
 		fov_recompute = False
 		libtcod.console_flush()
 		clear_all(con, entities)
@@ -97,6 +97,7 @@ def main():
 							energy = turn_result.get('not_enough_energy')
 							exit = turn_result.get('exit')
 							fullscreen = turn_result.get('fullscreen')
+							effect = turn_result.get('create effect')
 
 
 							if message:
@@ -108,6 +109,9 @@ def main():
 								else:
 									message = kill_monster(dead_entity)
 								print(message)
+
+							if effect:
+								superimpose_effect(effect, effects)
 
 							if energy == None:
 								action_buffer = None
@@ -126,15 +130,20 @@ def main():
 			else:
 				if entity.ai:
 					turn_results = entity.ai.take_action(nav_map, entities)
+
 					if turn_results:
 						for turn_result in turn_results:
 								message = turn_result.get('message')
 								dead_entity = turn_result.get('dead')
 								exit = turn_result.get('exit')
 								fullscreen = turn_result.get('fullscreen')
+								effect = turn_result.get('create effect')
 
 								if message:
 									print(message)
+
+								if effect:
+									superimpose_effect(effect, effects)
 
 								if dead_entity:
 									if dead_entity == player:

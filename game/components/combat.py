@@ -1,6 +1,8 @@
 import components.body
 import random
 import copy
+import tcod as libtcod
+from entities import StationaryEffect
 
 class Combatant:
 	def __init__(self, body, base_defense, attack_power, attack_power_deviation, active = True, fear = 0, pain = 0, blood = 10000, feats = set()):
@@ -45,7 +47,7 @@ class Combatant:
 				self.body[target].status.update({attack_type : attack})
 			else:
 				self.body[target].status.update({attack_type : 100})
-			results.append({'message': 'Critical {0} !'.format(attack_type)})
+			results.append({'message': 'Critical {0}!'.format(attack_type)})
 
 		return results
 		
@@ -57,12 +59,16 @@ class Combatant:
 			power = random.gauss(self.attack_power, self.attack_power_deviation)
 			damage = power - target.combat_aspect.body[bodypart].durability
 			if damage > 0:
-				results.append({'message': '{0} attacks {1}'.format(
-					self.owner.name.capitalize(), target.name)})
+				results.append({'message': '{0} attacks {1}'.format(self.owner.name.capitalize(), target.name)})
 				results.extend(target.combat_aspect.take_damage(bodypart, damage, attack_type))
+				if damage > 5:
+					eff_x = random.choice((target.x-1, target.x+1))
+					eff_y = random.choice((target.y-1, target.y+1))
+					blood_splatter = StationaryEffect(eff_x, eff_y, ',', libtcod.desaturated_red, 'blood splatter', 5)
+					results.append({'create effect' : blood_splatter})
+
 			else:
-				results.append({'message': '{0} attacks {1} but does no damage.'.format(
-					self.owner.name.capitalize(), target.name)})
+				results.append({'message': '{0} attacks {1} but does no damage.'.format(self.owner.name.capitalize(), target.name)})
 
 			self.owner.energy = 0
 			return results
@@ -97,9 +103,11 @@ class Combatant:
 			results.append({'dead': self.owner})
 			self.active = False
 
+		if 10 < bleed < 100:
+			blood_splatter = StationaryEffect(self.owner.x, self.owner.y, ',', libtcod.desaturated_red, 'blood splatter', 1)
+			results.append({'create effect' : blood_splatter})
+		elif 100 < bleed:
+			blood_splatter = StationaryEffect(self.owner.x, self.owner.y, ',', libtcod.desaturated_red, 'blood splatter', 5)
+			results.append({'create effect' : blood_splatter})
+
 		return results
-
-
-def test():
-	combat_aspect = Combatant('humanoid', 10, 20, 5)
-	print(combat_aspect.body)
