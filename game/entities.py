@@ -176,12 +176,19 @@ class StationaryEffect(Entity):
 		dy = y - self.y
 		return math.sqrt(dx ** 2 + dy ** 2)
 
+	def __eq__(self, other):
+		if other.__class__.__name__== 'StationaryEffect':
+			if (self.x == other.x) and (self.y == other.y) and (self.name == other.name):
+				return True
+		else:
+			return False
+
 
 
 def superimpose_effect(effect, all_effects):
 	if all_effects:
 		for old_effect in all_effects:
-			if (effect.x == old_effect.x) and (effect.y == old_effect.y) and (effect.name == old_effect.name):
+			if effect == old_effect:
 				old_effect.amount += effect.amount
 				return all_effects
 	all_effects.append(effect)
