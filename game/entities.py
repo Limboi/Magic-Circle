@@ -51,6 +51,11 @@ class Self_moving(Entity):
 		dy = other.y - self.y
 		return math.sqrt(dx ** 2 + dy ** 2)
 
+	def distance_to_point(self,x,y):
+		dx = x - self.x
+		dy = y - self.y
+		return math.sqrt(dx ** 2 + dy ** 2)
+
 
 	def move_astar(self, target_x, target_y, entities, nav_map):
 		for entity in entities:
@@ -79,6 +84,7 @@ class Self_moving(Entity):
 		libtcod.path_delete(my_path)
 
 
+
 	def give_energy(self, energy):
 		self.energy += energy
 
@@ -86,7 +92,7 @@ class Self_moving(Entity):
 
 class Humanoid(Self_moving):
 	def __init__(self, x, y, char, color, name, energy = 0, speed = 10, render_order = RenderOrder.ACTOR, 
-		blocks = False, combat_aspect = None, ai = None):
+		blocks = False, combat_aspect = None, item_aspect = None, ai = None, inventory = None):
 
 		self.x, self.y = x, y
 		self.char = char
@@ -97,13 +103,21 @@ class Humanoid(Self_moving):
 		self.render_order = render_order
 		self.blocks = blocks
 		self.combat_aspect = combat_aspect
+		self.item_aspect = item_aspect
 		self.ai = ai
+		self.inventory = inventory
 
 		if self.combat_aspect:
 			self.combat_aspect.owner = self
 
+		if self.item_aspect:
+			self.item_aspect.owner = self
+
 		if self.ai:
 			self.ai.owner = self
+
+		if self.inventory:
+			self.inventory.owner = self
 
 
 
@@ -113,6 +127,36 @@ def get_blocking_entities_at_location(entities, destination_x, destination_y):
 			return entity
 
 	return None
+
+
+
+class Item(Entity):
+	def __init__(self, x, y, char, color, name, render_order = RenderOrder.ITEM, 
+		blocks = False, combat_aspect = None, item_aspect = None, ai = None):
+
+		self.x, self.y = x, y
+		self.char = char
+		self.color = color
+		self.name = name
+		self.render_order = render_order
+		self.blocks = blocks
+		self.combat_aspect = combat_aspect
+		self.item_aspect = item_aspect
+		self.ai = ai
+
+		if self.combat_aspect:
+			self.combat_aspect.owner = self
+
+		if self.item_aspect:
+			self.item_aspect.owner = self
+
+		if self.ai:
+			self.ai.owner = self
+
+	def distance_to_point(self,x,y):
+		dx = x - self.x
+		dy = y - self.y
+		return math.sqrt(dx ** 2 + dy ** 2)
 
 
 
@@ -126,6 +170,13 @@ class StationaryEffect(Entity):
 		self.amount = amount
 		self.lifetime = lifetime
 		self.render_order = render_order
+
+	def distance_to_point(self,x,y):
+		dx = x - self.x
+		dy = y - self.y
+		return math.sqrt(dx ** 2 + dy ** 2)
+
+
 
 def superimpose_effect(effect, all_effects):
 	if all_effects:

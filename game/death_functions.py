@@ -1,6 +1,7 @@
 import tcod as libtcod
 from game_states import GameStates
 from rendering import RenderOrder
+from game_messages import Message
 
 
 def kill_player(player):

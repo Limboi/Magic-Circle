@@ -1,67 +1,65 @@
-import components.body
+#import components.body
 import random
 import copy
 import tcod as libtcod
 from entities import StationaryEffect
 
 class Combatant:
-	def __init__(self, body, base_defense, attack_power, attack_power_deviation, active = True, fear = 0, pain = 0, blood = 10000, feats = set()):
-		if type(body) == str:
-			self.body = copy.deepcopy( components.body.body_constructor(base_defense, body) )
-		else:
-			self.body = body
+	def __init__(self, hp, base_defense, attack_power, attack_power_deviation, 
+		critical = 50, active = True, fear = 0, pain = 0, statuses = {}, feats = set()):
+		self.hp = hp
+		self.max_hp = hp
+		self.base_defense = base_defense
 		self.attack_power = attack_power
 		self.attack_power_deviation = attack_power_deviation
+		self.critical = critical
 		self.active = active
 		self.fear = fear
 		self.pain = pain
-		self.blood = blood
+		self.statuses = statuses
+		self.feats = feats
 
 
-	def take_damage(self, target, damage, attack_type):  #attack types:  'bruise', 'cut'
+	def take_damage(self, damage, attack_type, crit):  #attack types so far: 'cut', 'burn'
 		results = []
 
-		if damage < 5:
-			attack = self.body[target].status.get('bruise')
-			if attack:
-				attack += 1
-				self.body[target].status.update({'bruise' : attack})
-			else:
-				self.body[target].status.update({'bruise' : 1})
-			results.append({'message': 'Minor bruise'})
-			
-		elif 5 < damage < 20:
-			attack = self.body[target].status.get(attack_type)
-			if attack:
-				attack += 10
-				self.body[target].status.update({attack_type : attack})
-			else:
-				self.body[target].status.update({attack_type : 10})
-			results.append({'message': 'Major {0}'.format(attack_type)})
-
-		elif 20 < damage:
-			self.body[target].status.update({'destroyed' : True})
-			attack = self.body[target].status.get(attack_type)
-			if attack:
-				attack += 100
-				self.body[target].status.update({attack_type : attack})
-			else:
-				self.body[target].status.update({attack_type : 100})
-			results.append({'message': 'Critical {0}!'.format(attack_type)})
+		self.hp -= damage
+		if crit == True:
+			if attack_type == 'cut':
+				self.statuses.update({'bleed':damage/2})
+			elif attack_type == 'burn':
+				pass
 
 		return results
 		
 
-	def attack(self, target, bodypart, attack_type):
-		if self.owner.energy >= 100:
+	def heal(self, amount):
+		self.hp += amount
+
+		if self.hp > self.max_hp:
+			self.hp = self.max_hp
+		
+
+	def attack(self, target, attack_type):
+		if self.owner.energy >= 150:
 
 			results = []
 			power = random.gauss(self.attack_power, self.attack_power_deviation)
-			damage = power - target.combat_aspect.body[bodypart].durability
+			damage = power - target.combat_aspect.base_defense
+			crit = False
+			if random.randint(1,100) < self.critical:
+				crit = True
+			if crit == True:
+				damage = damage*2
+
 			if damage > 0:
-				results.append({'message': '{0} attacks {1}'.format(self.owner.name.capitalize(), target.name)})
-				results.extend(target.combat_aspect.take_damage(bodypart, damage, attack_type))
-				if damage > 5:
+				results.append({'message': '{0} attacks {1} for {2} damage'.format(self.owner.name.capitalize(), target.name, round(damage))})
+				if crit == True:
+					results.append({'message': 'Critical {0}!'.format(attack_type)})
+
+				results.extend(target.combat_aspect.take_damage(damage, attack_type, crit))
+
+				if damage > target.combat_aspect.hp/5:
 					eff_x = random.choice((target.x-1, target.x+1))
 					eff_y = random.choice((target.y-1, target.y+1))
 					blood_splatter = StationaryEffect(eff_x, eff_y, ',', libtcod.desaturated_red, 'blood splatter', 5)
@@ -79,35 +77,28 @@ class Combatant:
 
 	def update_combatant_state(self):
 		results = []
-		bleed = 0
-		pain = 0
-		for part in self.body:
-			if (part.__class__.__name__ == 'Head' or part.__class__.__name__ == 'Torso') and part.status.get('destroyed', False):
-				results.append({'dead': self.owner})
-				self.active = False
-				return results
+		
+		if random.randint(1,50) == 1:
+			if self.statuses:
+				#results.append({'message': 'proc!'})
+				if self.statuses.get('bleed'):
+					bleedout = self.statuses.get('bleed')
+					if bleedout <= 1:
+						self.statuses.pop('bleed')
+					else:
+						self.statuses.update({'bleed': bleedout - 1})
 
-			if part.status.get('cut'):
-				bleed += part.status.get('cut')
-				pain += int(part.status.get('cut')/5)
+					self.hp -= 1
+					
+					if bleedout < 50:
+						blood_splatter = StationaryEffect(self.owner.x, self.owner.y, ',', libtcod.desaturated_red, 'blood splatter', 1)
+						results.append({'create effect' : blood_splatter})
+					elif 50 < bleedout:
+						blood_splatter = StationaryEffect(self.owner.x, self.owner.y, ',', libtcod.desaturated_red, 'blood splatter', 5)
+						results.append({'create effect' : blood_splatter})
 
-			if part.status.get('bruise'):
-				pain += part.status.get('bruise')
-				if part.status.get('bruise') > 99:
-					bleed += int(part.status.get('bruise')/2)
-
-		self.blood -= bleed
-		self.pain += pain
-
-		if self.blood <= 0:
+		if self.hp <= 0:
 			results.append({'dead': self.owner})
 			self.active = False
-
-		if 10 < bleed < 100:
-			blood_splatter = StationaryEffect(self.owner.x, self.owner.y, ',', libtcod.desaturated_red, 'blood splatter', 1)
-			results.append({'create effect' : blood_splatter})
-		elif 100 < bleed:
-			blood_splatter = StationaryEffect(self.owner.x, self.owner.y, ',', libtcod.desaturated_red, 'blood splatter', 5)
-			results.append({'create effect' : blood_splatter})
 
 		return results
